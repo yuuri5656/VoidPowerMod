@@ -26,6 +26,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -58,6 +59,13 @@ public class HologramTE extends SmartBlockEntity implements MenuProvider, IFrame
     public float offx = 0, offy = 0, offz = 0;
     public float rotYaw = 0, rotPitch = 0, rotRoll = 0;
     public float scalex = 1, scaley = 1;
+    public static final double MIN_DISPLAY_SCALE = 0.01d;
+    public static final double MAX_DISPLAY_SCALE = 10.0d;
+    public static final int MIN_REFRESH_INTERVAL_TICKS = 1;
+    public static final int MAX_REFRESH_INTERVAL_TICKS = 20;
+    private double displayScale = 1.0d;
+    private int refreshIntervalTicks = MIN_REFRESH_INTERVAL_TICKS;
+    private int refreshTickCooldown = 0;
     public final SyncLocker<Boolean> transformDirty = new SyncLocker<>(false);
     public final SyncLocker<Boolean> needSync = new SyncLocker<>(true);
 
@@ -113,19 +121,47 @@ public class HologramTE extends SmartBlockEntity implements MenuProvider, IFrame
         }
     }
 
+    public double getDisplayScale() {
+        return displayScale;
+    }
+
+    public void setDisplayScale(double scale) {
+        if (!Double.isFinite(scale)) {
+            displayScale = 1.0d;
+            return;
+        }
+        double clamped = Mth.clamp(scale, MIN_DISPLAY_SCALE, MAX_DISPLAY_SCALE);
+        displayScale = Math.round(clamped * 100.0d) / 100.0d;
+    }
+
+    public int getRefreshIntervalTicks() {
+        return refreshIntervalTicks;
+    }
+
+    public void setRefreshIntervalTicks(int ticks) {
+        refreshIntervalTicks = Mth.clamp(ticks, MIN_REFRESH_INTERVAL_TICKS, MAX_REFRESH_INTERVAL_TICKS);
+        refreshTickCooldown = 0;
+    }
+
     int force_full_sync_ticker = 0;
     public void serverSync(){
         if(peripheral == null) return;
+        if(refreshTickCooldown > 0) {
+            --refreshTickCooldown;
+        }
         if(force_full_sync_ticker < Config.ForceFullUpdateTick){
             ++force_full_sync_ticker;
         }
-        if(needSync.getThenSet(false)){
-            if(Config.ForceFullUpdateTick > 0 && force_full_sync_ticker >= Config.ForceFullUpdateTick){
-                force_full_sync_ticker = 0;
-                FullSyncPack();
-            }
-            else {
-                NoFullSyncPack();
+        if(needSync.get() && refreshTickCooldown <= 0){
+            if(needSync.getThenSet(false)) {
+                if(Config.ForceFullUpdateTick > 0 && force_full_sync_ticker >= Config.ForceFullUpdateTick){
+                    force_full_sync_ticker = 0;
+                    FullSyncPack();
+                }
+                else {
+                    NoFullSyncPack();
+                }
+                refreshTickCooldown = Math.max(0, refreshIntervalTicks - 1);
             }
         }
         if(transformDirty.getThenSet(false)){
@@ -560,6 +596,14 @@ public class HologramTE extends SmartBlockEntity implements MenuProvider, IFrame
                 te.scaley = nbt.getFloat("scaley");
             }
 
+            if(nbt.contains("display_scale")){
+                te.setDisplayScale(nbt.getDouble("display_scale"));
+            }
+
+            if (nbt.contains("refresh_ticks")) {
+                te.setRefreshIntervalTicks(nbt.getInt("refresh_ticks"));
+            }
+
             if(nbt.contains("initcol")){
                 te.initColor = nbt.getInt("initcol");
             }
@@ -586,6 +630,8 @@ public class HologramTE extends SmartBlockEntity implements MenuProvider, IFrame
 
             nbt.putFloat("scalex", te.scalex);
             nbt.putFloat("scaley", te.scaley);
+            nbt.putDouble("display_scale", te.getDisplayScale());
+            nbt.putInt("refresh_ticks", te.getRefreshIntervalTicks());
             nbt.putInt("initcol", te.initColor);
 
             nbt.putString("_name", te.name);

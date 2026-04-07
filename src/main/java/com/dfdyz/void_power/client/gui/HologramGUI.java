@@ -12,6 +12,7 @@ import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.MenuAccess;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import org.jetbrains.annotations.NotNull;
 
@@ -23,6 +24,10 @@ public class HologramGUI extends Screen implements MenuAccess<HologramMenu> {
     Button set_name;
 
     float terminal_scale = 1;
+    private double terminal_size_factor = 1.0d;
+    private double lastDisplayScale = -1d;
+    private int lastScreenWidth = -1;
+    private int lastScreenHeight = -1;
     final HologramMenu menu;
 
     public HologramGUI(HologramMenu menu, Inventory inventory, Component p_97743_) {
@@ -34,6 +39,7 @@ public class HologramGUI extends Screen implements MenuAccess<HologramMenu> {
     }
 
     float GetScale(){
+        float minScale = (float) HologramTE.MIN_DISPLAY_SCALE;
         float w = 0.5f,h = 0.25f;
         
         int wi = te.getWidth();
@@ -48,7 +54,16 @@ public class HologramGUI extends Screen implements MenuAccess<HologramMenu> {
         else if (wi <= 128) w = 2;
         else if (wi <= 256) w = 1;
 
-        return Math.min(w, h);
+        float scale = (float) (Math.min(w, h) * terminal_size_factor);
+
+        if (width > 0 && height > 0 && wi > 0 && hi > 0) {
+            float fitW = (width - 8f) / wi;
+            float fitH = (height - 8f) / hi;
+            float fit = Math.max(minScale, Math.min(fitW, fitH));
+            scale = Math.min(scale, fit);
+        }
+
+        return Math.max(minScale, scale);
     }
 
     HologramTerminalWidget getTerminal(){
@@ -57,14 +72,50 @@ public class HologramGUI extends Screen implements MenuAccess<HologramMenu> {
         int hi = te.getHeight();
         int w = (int) (wi * terminal_scale);
         int h = (int) (hi * terminal_scale);
-        return addRenderableWidget(
-                new HologramTerminalWidget(te, (width - w) / 2, (height - h) / 2, w, h)
-        );
+        return new HologramTerminalWidget(te, (width - w) / 2, (height - h) / 2, w, h);
+    }
+
+    public void SetDisplayScale(double scale) {
+        terminal_size_factor = Mth.clamp(scale, HologramTE.MIN_DISPLAY_SCALE, HologramTE.MAX_DISPLAY_SCALE);
+        UpdateTerminalLayout();
+    }
+
+    private void UpdateTerminalLayout() {
+        if (te == null || htw == null) {
+            return;
+        }
+
+        terminal_scale = GetScale();
+        int w = Math.max(1, Math.round(te.getWidth() * terminal_scale));
+        int h = Math.max(1, Math.round(te.getHeight() * terminal_scale));
+        htw.setX((width - w) / 2);
+        htw.setY((height - h) / 2);
+        htw.setHeight(h);
+        htw.setWidth(w);
+        htw.MarkTerminalResized();
+
+        if (name_editor != null && set_name != null) {
+            if (htw.getY() + 29 < set_name.getHeight()) {
+                name_editor.setY(htw.getY() - 30);
+                set_name.setY(htw.getY() - 31);
+            }
+            else {
+                name_editor.setY(1);
+                set_name.setY(1);
+            }
+        }
+
+        lastScreenWidth = width;
+        lastScreenHeight = height;
+        lastDisplayScale = terminal_size_factor;
     }
 
     @Override
     protected void init() {
         super.init();
+        if (te != null) {
+            terminal_size_factor = te.getDisplayScale();
+        }
         htw = addRenderableWidget(getTerminal());
 
         name_editor = addRenderableWidget(
@@ -78,6 +129,8 @@ public class HologramGUI extends Screen implements MenuAccess<HologramMenu> {
                 .pos(width / 2 + 128-20, 1)
                 .size(40,18)
                 .build());
+
+        UpdateTerminalLayout();
 
         setInitialFocus(htw);
     }
@@ -94,26 +147,20 @@ public class HologramGUI extends Screen implements MenuAccess<HologramMenu> {
             Minecraft.getInstance().setScreen(null);
             return;
         }
-        if(htw.ShouldResize()){
-            terminal_scale = GetScale();
-            int w = (int) (te.getWidth() * terminal_scale);
-            int h = (int) (te.getHeight() * terminal_scale);
-            htw.setX((width - w) / 2);
-            htw.setY((height - h) / 2);
-            htw.setHeight(h);
-            htw.setWidth(w);
-
-            if(htw.getY() + 29 < set_name.getHeight()){
-                name_editor.setY(htw.getY() - 30);
-                set_name.setY(htw.getY() - 31);
-            }
-            else {
-                name_editor.setY(1);
-                set_name.setY(1);
-            }
-
+        double syncedDisplayScale = te.getDisplayScale();
+        if (Math.abs(syncedDisplayScale - lastDisplayScale) > 0.000001d) {
+            SetDisplayScale(syncedDisplayScale);
+        }
+        if(htw.ShouldResize() || width != lastScreenWidth || height != lastScreenHeight){
+            UpdateTerminalLayout();
         }
         //htw.setFocused(true);
+    }
+
+    @Override
+    public void resize(@NotNull Minecraft minecraft, int width, int height) {
+        super.resize(minecraft, width, height);
+        UpdateTerminalLayout();
     }
 
     @Override

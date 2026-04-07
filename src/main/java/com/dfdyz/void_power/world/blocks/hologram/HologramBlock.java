@@ -1,9 +1,7 @@
 package com.dfdyz.void_power.world.blocks.hologram;
 
-import com.dfdyz.void_power.client.gui.HologramGUI;
 import com.dfdyz.void_power.registry.VPShapes;
 import com.simibubi.create.foundation.block.IBE;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -14,6 +12,7 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -24,8 +23,7 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.function.Function;
+import org.jetbrains.annotations.Nullable;
 
 import static com.dfdyz.void_power.registry.VPTileEntities.HOLOGRAM_TE;
 
@@ -68,6 +66,12 @@ public class HologramBlock extends HorizontalDirectionalBlock implements IBE<Hol
     @Override
     public BlockEntityType getBlockEntityType() {
         return HOLOGRAM_TE.get();
+    }
+
+    @Nullable
+    @Override
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return HOLOGRAM_TE.create(pos, state);
     }
 
     @Override

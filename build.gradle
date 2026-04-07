@@ -15,6 +15,8 @@ base {
     archivesName = mod_id
 }
 
+def isReleaseBuild = project.hasProperty('releaseBuild')
+
 // Mojang ships Java 17 to end users in 1.18+, so your mod should target Java 17.
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
@@ -67,6 +69,8 @@ minecraft {
 
             //jvmArg '-XX:+AllowEnhancedClassRedefinition'
             //jvmArg '-javaagent:\"C:\\Users\\ArcLight\\.gradle\\caches\\modules-2\\files-2.1\\org.spongepowered\\mixin\\0.8.5\\9d1c0c3a304ae6697ecd477218fa61b850bf57fc\\mixin-0.8.5.jar\"'
+            jvmArg '-Xms512M'
+            jvmArg '-Xmx2G'
 
 
             workingDirectory project.file('run')
@@ -141,6 +145,7 @@ repositories {
     }
 
     maven { url = 'https://maven.minecraftforge.net' }
+    maven { url = 'https://maven.createmod.net/' }
     maven {
         name = 'tterrag maven'
         url = 'https://maven.tterrag.com/'
@@ -153,9 +158,7 @@ repositories {
 
     maven { url 'https://maven.valkyrienskies.org/' }
 
-    repositories {
-        maven { url = "https://maven.bawnorton.com/releases" }
-    }
+    maven { url = "https://maven.bawnorton.com/releases" }
 
     mavenCentral()
 }
@@ -175,9 +178,9 @@ dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
     // create dependencies
-    implementation fg.deobf("com.simibubi.create:create-${create_minecraft_version}:${create_version}:slim") { transitive = false }
+    implementation fg.deobf("com.simibubi.create:create-${create_minecraft_version}:${create_version}") { transitive = false }
     implementation fg.deobf("com.jozufozu.flywheel:flywheel-forge-${flywheel_minecraft_version}:${flywheel_version}")
-    implementation fg.deobf("com.tterrag.registrate:Registrate:${registrate_version}")
+    compileOnly fg.deobf("com.tterrag.registrate:Registrate:${registrate_version}")
 
     // vs2 dependencies
     implementation fg.deobf("org.valkyrienskies:valkyrienskies-120-forge:${vs2_version}") { transitive = false }
@@ -269,8 +272,14 @@ tasks.named('jar', Jar).configure {
         ])
     }
 
-    // This is the preferred method to reobfuscate your jar file
-    finalizedBy 'reobfJar'
+    // Reobfuscation is only required for release artifacts.
+    if (isReleaseBuild) {
+        finalizedBy 'reobfJar'
+    }
+}
+
+tasks.matching { it.name == 'reobfJar' || it.name == 'reobfJarJar' }.configureEach {
+    onlyIf { isReleaseBuild }
 }
 
 // However if you are in a multi-project build, dev time needs unobfed jar files, so you can delay the obfuscation until publishing by doing:
@@ -296,3 +305,7 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
 }
 
+tasks.withType(JavaExec).configureEach {
+    minHeapSize = '256m'
+    maxHeapSize = '1g'
+}

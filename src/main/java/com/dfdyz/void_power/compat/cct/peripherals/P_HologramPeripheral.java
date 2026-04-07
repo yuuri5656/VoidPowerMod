@@ -46,6 +46,12 @@ public class P_HologramPeripheral implements IPeripheral{
 
     @LuaFunction
     public final int CreateFrameBuffer(int w, int h){
+        if (w > Config.holo_w_mx || h > Config.holo_h_mx) {
+            return -1;
+        }
+        if (w <= 0 || h <= 0) {
+            return -1;
+        }
         int idx = -1;
         for (int i = 0; i < buffers.length; i++) {
             if(buffers[i] == null){
@@ -115,6 +121,9 @@ public class P_HologramPeripheral implements IPeripheral{
     @LuaFunction
     public final void Resize(int w, int h) throws LuaException {
         synchronized (SYNC_LOCK){
+            if (w <= 0 || h <= 0) {
+                throw new LuaException("Resolution must be positive.");
+            }
             if(w > Config.holo_w_mx || h > Config.holo_h_mx) throw new LuaException("Max resolution is %d x %d, out of range.".formatted(Config.holo_w_mx, Config.holo_h_mx));
             currentBuffer = currentBuffer.resize(w, h);
         }
@@ -730,6 +739,16 @@ public class P_HologramPeripheral implements IPeripheral{
     }
 
     @LuaFunction
+    public final Object[] GetSize() {
+        return new Object[]{ (double) currentBuffer.getWidth(), (double) currentBuffer.getHeight() };
+    }
+
+    @LuaFunction
+    public final Object[] GetScale() {
+        return new Object[]{ (double) te.scalex, (double) te.scaley };
+    }
+
+    @LuaFunction
     public final void SetScale(double x, double y) throws LuaException {
         if(x > 3 || y > 3) throw new LuaException("Too large, max is 3.");
         synchronized (SYNC_LOCK) {
@@ -737,6 +756,46 @@ public class P_HologramPeripheral implements IPeripheral{
             te.scaley = (float) y;
         }
         te.transformDirty.set(true);
+    }
+
+    @LuaFunction
+    public final void SetDisplayScale(double scale) throws LuaException {
+        if (!Double.isFinite(scale)) {
+            throw new LuaException("Scale must be a finite number.");
+        }
+        synchronized (SYNC_LOCK) {
+            te.setDisplayScale(scale);
+        }
+        te.transformDirty.set(true);
+    }
+
+    @LuaFunction
+    public final double GetDisplayScale() {
+        return te.getDisplayScale();
+    }
+
+    @LuaFunction
+    public final void SetRefreshIntervalTicks(int ticks) {
+        te.setRefreshIntervalTicks(ticks);
+    }
+
+    @LuaFunction
+    public final double GetRefreshIntervalTicks() {
+        return te.getRefreshIntervalTicks();
+    }
+
+    @LuaFunction
+    public final void SetRefreshRate(double hz) throws LuaException {
+        if (!Double.isFinite(hz) || hz <= 0.0d) {
+            throw new LuaException("Refresh rate must be a positive finite number.");
+        }
+        int ticks = (int) Math.round(20.0d / hz);
+        te.setRefreshIntervalTicks(ticks);
+    }
+
+    @LuaFunction
+    public final double GetRefreshRate() {
+        return 20.0d / te.getRefreshIntervalTicks();
     }
 
     @LuaFunction

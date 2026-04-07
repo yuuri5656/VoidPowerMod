@@ -17,16 +17,25 @@ import java.util.BitSet;
 public class HologramTerminalWidget extends AbstractWidget {
     private static final Component DESCRIPTION = Component.translatable("gui.void_power.terminal");
     HologramTE te;
+    private int sourceWidth;
+    private int sourceHeight;
 
     private final BitSet keysDown = new BitSet(256);
 
     public HologramTerminalWidget(HologramTE te, int x, int y, int w, int h) {
         super(x, y, w, h, DESCRIPTION);
         this.te = te;
+        this.sourceWidth = te.getWidth();
+        this.sourceHeight = te.getHeight();
     }
 
     public boolean ShouldResize(){
-        return te.getWidth() != this.width || te.getHeight() != this.height;
+        return te.getWidth() != sourceWidth || te.getHeight() != sourceHeight;
+    }
+
+    public void MarkTerminalResized() {
+        sourceWidth = te.getWidth();
+        sourceHeight = te.getHeight();
     }
 
     @Override

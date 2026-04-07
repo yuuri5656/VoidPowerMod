@@ -9,6 +9,7 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -61,6 +62,12 @@ public class EngineControllerBlock extends HorizontalDirectionalBlock implements
                 .setValue(FACING, context.getHorizontalDirection().getOpposite());
         return this.defaultBlockState()
                 .setValue(FACING, context.getHorizontalDirection());
+    }
+
+    @Nullable
+    @Override
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return VPTileEntities.ENGINE_CONTROLLER_TE.create(pos, state);
     }
 
 

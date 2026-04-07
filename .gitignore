@@ -25,3 +25,8 @@ run-data
 
 # Files from Forge MDK
 forge*changelog.txt
+.vscode/launch.json
+.gitignore
+.vscode/tasks.json
+libs/create-1.20.1-0.5.1.j.jar.bak
+libs/create-1.20.1-0.5.1.j.jar

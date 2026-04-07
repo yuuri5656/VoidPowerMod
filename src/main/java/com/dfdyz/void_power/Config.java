@@ -46,11 +46,11 @@ public class Config
 
     private static final ForgeConfigSpec.IntValue HOLOGRAM_RES_X_MAX = BUILDER
             .comment("Max width can set for a hologram.")
-            .defineInRange("HOLOGRAM_WIDTH_MAX", 1024, 128, 2048);
+            .defineInRange("HOLOGRAM_WIDTH_MAX", 2048, 128, 2048);
 
     private static final ForgeConfigSpec.IntValue HOLOGRAM_RES_Y_MAX = BUILDER
             .comment("Max height can set for a hologram..")
-            .defineInRange("HOLOGRAM_HEIGHT_MAX", 1024, 128, 2048);
+            .defineInRange("HOLOGRAM_HEIGHT_MAX", 2048, 128, 2048);
 
     private static final ForgeConfigSpec.IntValue HOLOGRAM_BUFFER_COUNT = BUILDER
             .comment("Max count of frame buffer in a hologram.")
@@ -82,8 +82,8 @@ public class Config
     public static int HologramMaxBufferCount = 8;
     public static int ForceFullUpdateTick = 2;
 
-    public static int holo_w_mx = 1024;
-    public static int holo_h_mx = 1024;
+        public static int holo_w_mx = 2048;
+        public static int holo_h_mx = 2048;
 
     public static boolean UnlimitDistance = true;
 

@@ -14,6 +14,7 @@ import java.util.function.Supplier;
 public class SP_HologramPoseUpdate {
     public BlockPos te;
     public float x, y, z, yaw, pitch, roll, sx, sy;
+    public double displayScale;
 
 
     public SP_HologramPoseUpdate(){
@@ -30,6 +31,7 @@ public class SP_HologramPoseUpdate {
         roll = te.rotRoll;
         sx = te.scalex;
         sy = te.scaley;
+        displayScale = te.getDisplayScale();
     }
 
 
@@ -47,6 +49,7 @@ public class SP_HologramPoseUpdate {
         data.roll = buf.readFloat();
         data.sx = buf.readFloat();
         data.sy = buf.readFloat();
+        data.displayScale = buf.readDouble();
 
 
         return data;
@@ -62,6 +65,7 @@ public class SP_HologramPoseUpdate {
         buf.writeFloat(roll);
         buf.writeFloat(sx);
         buf.writeFloat(sy);
+        buf.writeDouble(displayScale);
     }
 
     public static void handler(SP_HologramPoseUpdate msg, Supplier<NetworkEvent.Context> context){
@@ -78,6 +82,7 @@ public class SP_HologramPoseUpdate {
                 te.rotRoll = msg.roll;
                 te.scalex = msg.sx;
                 te.scaley = msg.sy;
+                te.setDisplayScale(msg.displayScale);
             }
         });
     }
